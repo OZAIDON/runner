@@ -17,7 +17,8 @@ public class TileManaager : MonoBehaviour
     {
         for (int i = 0; i < numberOfTiles; i++)
         {
-            SpawnTile();
+            if (i == 0) SpawnTile(true);
+            else SpawnTile(false);
         }
     }
     void Update()
@@ -27,11 +28,19 @@ public class TileManaager : MonoBehaviour
             RecycleTile();
         }
     }
-    void SpawnTile()
+    void SpawnTile(bool isFirstTile = false)
     {
         GameObject go = Instantiate(tilePrefab, transform.forward * zSpawn, transform.rotation);
         activeTiles.Add(go);
         zSpawn += tileLenght;
+        if (isFirstTile)
+        {
+            go.GetComponent<Tile>().SetEmptyLayout();
+        }
+        else
+        {
+            go.GetComponent <Tile>().RandomizeObstacles();
+        }
     }
     void RecycleTile()
     {
@@ -40,5 +49,6 @@ public class TileManaager : MonoBehaviour
         zSpawn += tileLenght;
         activeTiles.RemoveAt(0);
         activeTiles.Add(oldestTile);
+        oldestTile.GetComponent<Tile>().RandomizeObstacles();
     }
 }

@@ -15,84 +15,145 @@ public class PlayerMovement : MonoBehaviour
     private float verticalVelocity;
     private bool isGrounded = true;
 
-    private BoxCollider playerCol;
-    private float originalHeight;
-    private float originalCenterY;
+    [Header("Environment Sensing")]
+    public LayerMask groundLayer;
 
+    private Rigidbody _rb;
     private int desiredLane = 1;
+    private float originalScaleY;
+    private bool jumpRequest = false;
+    private float visualBump = 0f;
     void Start()
     {
-        playerCol = GetComponent<BoxCollider>();
-        originalHeight = playerCol.size.y;
-        originalCenterY = playerCol.center.y;
+        _rb = GetComponent<Rigidbody>();
+        originalScaleY = transform.localScale.y;
     }
 
     void Update()
     {
-        Vector3 forwardMove = Vector3.forward * forwardSpeed * Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+        {
+            if (desiredLane < 2)
             {
-            desiredLane++;
-            if (desiredLane == 3) desiredLane = 2;
-            }
+                if (IsPathClear(1))
+                {
+                    desiredLane++;
+                }
+                else
+                {
+                    StopAllCoroutines();
+                    StartCoroutine(BumpEffect(1));
+                }
+            } 
+        }
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
         {
-            desiredLane--;
-            if (desiredLane == -1) desiredLane = 0;
+            if (desiredLane > 0)
+            {
+                if (IsPathClear(-1))
+                {
+                    desiredLane--;
+                }
+                else
+                {
+                    StopAllCoroutines();
+                    StartCoroutine(BumpEffect(-1));
+                }
+            }
         }
-        Vector3 targetPosition = transform.position;
-        if (desiredLane == 0)
+
+        if (isGrounded && (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)))
         {
-            targetPosition.x = -laneDistance;
+            jumpRequest = true; 
         }
-        else if (desiredLane == 1)
+
+        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
         {
-            targetPosition.x = 0;
+                StartCoroutine(Slide());
         }
-        else if (desiredLane == 2) 
-        { 
-            targetPosition.x = laneDistance;
-        }
-        float newX = Mathf.Lerp(transform.position.x, targetPosition.x, Time.deltaTime * sideSpeed);
+    }
+    void FixedUpdate()
+    {
+        float newZ = _rb.position.z + (forwardSpeed * Time.fixedDeltaTime);
+        float targetX = 0f;
+        if (desiredLane == 0) targetX = -laneDistance;
+        else if (desiredLane == 1) targetX = 0;
+        else if (desiredLane == 2) targetX = laneDistance;
+
+        float newX = Mathf.Lerp(_rb.position.x, targetX + visualBump, Time.fixedDeltaTime * sideSpeed);
         if (isGrounded)
         {
-            verticalVelocity = -0.1f;
-
-            if(Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            if (jumpRequest)
             {
                 verticalVelocity = jumpForce;
                 isGrounded = false;
+                jumpRequest = false;
+            }
+            else
+            {
+                verticalVelocity = 0f;
             }
         }
         else
         {
-            verticalVelocity += gravity * Time.deltaTime;
+            verticalVelocity += gravity * Time.fixedDeltaTime;
         }
-        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-        {
-            StartCoroutine(Slide());
-        }
-        Vector3 newPosition = new Vector3(newX, transform.position.y + (verticalVelocity * Time.deltaTime), transform.position.z + forwardMove.z);
-        transform.position = newPosition;
+        float dynamicGroundY = transform.localScale.y / 2f;
+        Vector3 rayStart = new Vector3(_rb.position.x, _rb.position.y + 0.5f, _rb.position.z);
+        RaycastHit hit;
 
-        if (transform.position.y <= 0.5f)
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 10f, groundLayer))
         {
-            transform.position = new Vector3(transform.position.x, 0.5f, transform.position.z);
+            dynamicGroundY = hit.point.y + (transform.localScale.y / 2f);
+        }
+
+        float nextY = _rb.position.y + (verticalVelocity * Time.fixedDeltaTime);
+        if (nextY <= dynamicGroundY)
+        {
+            nextY = dynamicGroundY;
             isGrounded = true;
         }
+        else
+        {
+            isGrounded = false;
+        }
+        Vector3 newPosition = new Vector3(newX, nextY, newZ);
+        _rb.MovePosition(newPosition);
     }
+
     IEnumerator Slide()
     {
         if (!isGrounded)
         {
             verticalVelocity = -jumpForce;
         }
-        playerCol.size = new Vector3(playerCol.size.x, originalHeight / 2, playerCol.size.z);
-        playerCol.center = new Vector3(playerCol.center.x, originalCenterY / 2, playerCol.center.z);
-
+        transform.localScale = new Vector3(transform.localScale.x, originalScaleY / 2f, transform.localScale.z);
+        if (isGrounded)
+        {
+            transform.position = new Vector3(transform.position.x, originalScaleY / 4f, transform.position.z);
+        }
         yield return new WaitForSeconds(1f);
+        transform.localScale = new Vector3(transform.localScale.x, originalScaleY, transform.localScale.z);
+    }
+    IEnumerator BumpEffect(int direction)
+    {
+        float bumpDistance = 0.7f;
+        float duration = 0.1f;
 
-        playerCol.size = new Vector3(playerCol.size.x, originalHeight, playerCol.size.z);
-        playerCol.center = new Vector3(playerCol.center.x, originalCenterY, playerCol.center.z);
+        visualBump = direction * bumpDistance;
+        yield return new WaitForSeconds(duration);
+
+        visualBump = 0f;
+    }
+    bool IsPathClear(int direction)
+    {
+        Vector3 rayDirection = (direction == 1) ? transform.right : -transform.right;
+
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up, rayDirection, out hit, laneDistance, groundLayer))
+        {
+            return false;
+        }
+        return true;
     }
 }
