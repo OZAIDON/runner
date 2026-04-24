@@ -27,6 +27,11 @@ public class TileManaager : MonoBehaviour
         {
             RecycleTile();
         }
+
+        if (playerTransform.position.z > 2000f)
+        {
+            ShiftWorld();
+        }
     }
     void SpawnTile(bool isFirstTile = false)
     {
@@ -50,5 +55,26 @@ public class TileManaager : MonoBehaviour
         activeTiles.RemoveAt(0);
         activeTiles.Add(oldestTile);
         oldestTile.GetComponent<Tile>().RandomizeObstacles();
+    }
+
+    void ShiftWorld()
+    {
+        float shiftAmount = 2000f;
+        Vector3 shiftVector = new Vector3(0, 0, -shiftAmount);
+
+        Rigidbody playerRb = playerTransform.GetComponent<Rigidbody>();
+        if (playerRb != null)
+        {
+            playerRb.position += shiftVector;
+        }
+
+        Camera.main.transform.position += shiftVector;
+        foreach (GameObject tile in activeTiles)
+        {
+            tile.transform.position += shiftVector;
+        }
+
+        zSpawn -= shiftAmount;
+        Debug.Log("Dünya sýfýrlandý.");
     }
 }

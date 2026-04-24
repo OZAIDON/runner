@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2256857038888302952}
   - component: {fileID: 6286187675801140994}
   - component: {fileID: 8470128030602492928}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Jump&Ground_1
   m_TagString: Obstacle
   m_Icon: {fileID: 0}

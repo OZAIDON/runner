@@ -1,15 +1,39 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 public class PlayerCollision : MonoBehaviour
 {
     public PlayerMovement movementScript;
-
-    private void OnTriggerEnter(Collider other)
+    public GameObject restartUI;
+    private bool isDead = false;
+     void Update()
     {
-        if (other.CompareTag("Obstacle"))
+        if (isDead && Input.GetKeyDown(KeyCode.Space))
         {
-            Debug.Log("CRASHHH");
-            movementScript.enabled = false;
+            Restart();
         }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Obstacle") && !isDead)
+        {
+            Die();
+        }
+    }
+    void Die()
+    {
+        isDead = true;
+        movementScript.enabled = false;
+
+        if (restartUI != null)
+        {
+            restartUI.SetActive(true);
+        }
+    }
+    void Restart()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

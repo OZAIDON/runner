@@ -23,6 +23,7 @@ public class PlayerMovement : MonoBehaviour
     private float originalScaleY;
     private bool jumpRequest = false;
     private float visualBump = 0f;
+    private Coroutine bumpCoroutine;
     void Start()
     {
         _rb = GetComponent<Rigidbody>();
@@ -41,8 +42,11 @@ public class PlayerMovement : MonoBehaviour
                 }
                 else
                 {
-                    StopAllCoroutines();
-                    StartCoroutine(BumpEffect(1));
+                    if (bumpCoroutine != null)
+                    {
+                        StopCoroutine(bumpCoroutine);
+                    }
+                    bumpCoroutine = StartCoroutine(BumpEffect(1));
                 }
             } 
         }
@@ -56,8 +60,11 @@ public class PlayerMovement : MonoBehaviour
                 }
                 else
                 {
-                    StopAllCoroutines();
-                    StartCoroutine(BumpEffect(-1));
+                    if (bumpCoroutine != null)
+                    {
+                        StopCoroutine(bumpCoroutine);
+                    }
+                    bumpCoroutine = StartCoroutine(BumpEffect(-1));
                 }
             }
         }
@@ -97,17 +104,20 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             verticalVelocity += gravity * Time.fixedDeltaTime;
+            verticalVelocity = Mathf.Max(verticalVelocity, -50f);
         }
-        float dynamicGroundY = transform.localScale.y / 2f;
-        Vector3 rayStart = new Vector3(_rb.position.x, _rb.position.y + 0.5f, _rb.position.z);
+        float currentHalfHeight = transform.localScale.y / 2f;
+        float nextY = _rb.position.y + (verticalVelocity * Time.fixedDeltaTime);
+        float dynamicGroundY = currentHalfHeight;
+
+        Vector3 rayStart = new Vector3(_rb.position.x, _rb.position.y + 1f, _rb.position.z);
         RaycastHit hit;
 
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, 10f, groundLayer))
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
         {
-            dynamicGroundY = hit.point.y + (transform.localScale.y / 2f);
+            dynamicGroundY = hit.point.y + currentHalfHeight;
         }
 
-        float nextY = _rb.position.y + (verticalVelocity * Time.fixedDeltaTime);
         if (nextY <= dynamicGroundY)
         {
             nextY = dynamicGroundY;
@@ -128,12 +138,18 @@ public class PlayerMovement : MonoBehaviour
             verticalVelocity = -jumpForce;
         }
         transform.localScale = new Vector3(transform.localScale.x, originalScaleY / 2f, transform.localScale.z);
+
         if (isGrounded)
         {
-            transform.position = new Vector3(transform.position.x, originalScaleY / 4f, transform.position.z);
+            _rb.position = new Vector3(_rb.position.x, _rb.position.y - (originalScaleY / 4f), _rb.position.z);
         }
+     
         yield return new WaitForSeconds(1f);
         transform.localScale = new Vector3(transform.localScale.x, originalScaleY, transform.localScale.z);
+        if (isGrounded)
+        {
+            _rb.position = new Vector3(_rb.position.x, _rb.position.y + (originalScaleY / 4f), _rb.position.z);
+        }
     }
     IEnumerator BumpEffect(int direction)
     {
@@ -149,8 +165,17 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector3 rayDirection = (direction == 1) ? transform.right : -transform.right;
 
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up, rayDirection, out hit, laneDistance, groundLayer))
+        float currentSurfaceY = 0f;
+        RaycastHit downHit;
+        Vector3 downRayStart = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
+
+        if (Physics.Raycast(downRayStart, Vector3.down, out downHit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
+        {
+            currentSurfaceY = downHit.point.y;
+        }
+        Vector3 sideRayStart = new Vector3(transform.position.x, currentSurfaceY + 0.5f, transform.position.z);
+        RaycastHit sideHit;
+        if (Physics.Raycast(sideRayStart, rayDirection, out sideHit, laneDistance, groundLayer, QueryTriggerInteraction.Ignore))
         {
             return false;
         }
