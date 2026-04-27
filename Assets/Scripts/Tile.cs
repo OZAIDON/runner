@@ -1,22 +1,44 @@
 using UnityEngine;
 
+public enum Difficulty
+{
+    Easy,
+    Medium,
+    Hard
+}
 public class Tile : MonoBehaviour
 {
-    [Header("Obstacle Layouts")]
-    public GameObject[] layouts;
+    [Header("Layout Lists")]
+    public GameObject[] easyLayouts;
+    public GameObject[] mediumLayouts;
+    public GameObject[] hardLayouts;
 
-    public void RandomizeObstacles()
+    public void SetLayouts(Difficulty dif)
     {
-        foreach (GameObject layout in layouts)
+        CloseAllLayouts();
+        GameObject selectedLayout = null;
+
+        if (dif == Difficulty.Easy && easyLayouts.Length > 0)
         {
-            layout.SetActive(false);
+            selectedLayout = easyLayouts[Random.Range(0, easyLayouts.Length)];
         }
-        int randomIndex = Random.Range(0, layouts.Length);
-        layouts[randomIndex].SetActive(true);
+        else if (dif == Difficulty.Medium && mediumLayouts.Length > 0)
+        {
+            selectedLayout = mediumLayouts[Random.Range(0, mediumLayouts.Length)];
+        }
+        else if (dif == Difficulty.Hard && hardLayouts.Length > 0)
+        {
+            selectedLayout = hardLayouts[Random.Range(0, hardLayouts.Length)];
+        }
+        if (selectedLayout != null)
+        {
+            selectedLayout.SetActive(true);
+        }
     }
-    public void SetEmptyLayout()
+    void CloseAllLayouts()
     {
-        foreach (GameObject layout in layouts) layout.SetActive(false);
-        layouts[0].SetActive(true);
+        foreach (var layout in easyLayouts) layout.SetActive(false);
+        foreach (var layout in  mediumLayouts) layout.SetActive(false);
+        foreach (var layout in  hardLayouts) layout.SetActive(false);
     }
 }

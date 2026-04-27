@@ -4,21 +4,21 @@ using System.Collections.Generic;
 public class TileManaager : MonoBehaviour
 {
     [Header("Ground Settings")]
-    public GameObject tilePrefab;
+    public GameObject[] tilePrefab;
     public float tileLenght = 30f;
     public int numberOfTiles = 5;
+    private float zSpawn = 0f;
 
     [Header("Referances")]
     public Transform playerTransform;
-
     private List<GameObject> activeTiles = new List<GameObject>();
-    private float zSpawn = 0f;
+
+    private int layoutCounter = 0;
     void Start()
     {
         for (int i = 0; i < numberOfTiles; i++)
         {
-            if (i == 0) SpawnTile(true);
-            else SpawnTile(false);
+            SpawnTile(0);
         }
     }
     void Update()
@@ -33,28 +33,54 @@ public class TileManaager : MonoBehaviour
             ShiftWorld();
         }
     }
-    void SpawnTile(bool isFirstTile = false)
+    public void SpawnTile(int prefabIndex)
     {
-        GameObject go = Instantiate(tilePrefab, transform.forward * zSpawn, transform.rotation);
+        GameObject go = Instantiate(tilePrefab[prefabIndex], transform.forward * zSpawn, transform.rotation);
         activeTiles.Add(go);
+        Tile tileScript = go.GetComponent<Tile>();
+
+        if (tileScript != null)
+        {
+            tileScript.SetLayouts(SelectTileDifficulty());
+        }
         zSpawn += tileLenght;
-        if (isFirstTile)
-        {
-            go.GetComponent<Tile>().SetEmptyLayout();
-        }
-        else
-        {
-            go.GetComponent <Tile>().RandomizeObstacles();
-        }
     }
-    void RecycleTile()
+    private void RecycleTile()
     {
         GameObject oldestTile = activeTiles[0];
         oldestTile.transform.position = Vector3.forward * zSpawn;
         zSpawn += tileLenght;
         activeTiles.RemoveAt(0);
         activeTiles.Add(oldestTile);
-        oldestTile.GetComponent<Tile>().RandomizeObstacles();
+        Tile tileScript = oldestTile.GetComponent<Tile>();
+
+        if (tileScript != null)
+        {
+            tileScript.SetLayouts(SelectTileDifficulty());
+        }
+    }
+
+    private Difficulty SelectTileDifficulty()
+    {
+        Difficulty nextDif;
+
+        int loopStep = layoutCounter % 5;
+
+        if (loopStep == 0)
+        {
+            nextDif = Difficulty.Easy;
+        }
+        else if (loopStep == 4)
+        {
+            nextDif = Difficulty.Hard;
+        }
+        else
+        {
+            nextDif = Difficulty.Medium; 
+        }
+
+        layoutCounter++;
+        return nextDif;
     }
 
     void ShiftWorld()

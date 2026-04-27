@@ -46,15 +46,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c8f20b7e08caf41ac6b1631ab13591, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  layouts:
+  easyLayouts:
   - {fileID: 9004176164672935674}
+  - {fileID: 994033432939142174}
+  - {fileID: 5820259996810932890}
+  mediumLayouts:
   - {fileID: 5811794291557660089}
   - {fileID: 1641531637715565666}
-  - {fileID: 994033432939142174}
-  - {fileID: 3037007102794636345}
-  - {fileID: 5820259996810932890}
   - {fileID: 450749920172927707}
   - {fileID: 4499814483427724591}
+  hardLayouts:
+  - {fileID: 3037007102794636345}
 --- !u!1 &450749920172927707
 GameObject:
   m_ObjectHideFlags: 0

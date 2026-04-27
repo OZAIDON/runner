@@ -18,12 +18,17 @@ public class PlayerMovement : MonoBehaviour
     [Header("Environment Sensing")]
     public LayerMask groundLayer;
 
+    [Header("Input Buffer")]
+    public float jumpBufferTime = 0.2f;
+    private float jumpBufferCounter;
+
     private Rigidbody _rb;
     private int desiredLane = 1;
     private float originalScaleY;
     private bool jumpRequest = false;
     private float visualBump = 0f;
     private Coroutine bumpCoroutine;
+    private Coroutine slideCoroutine;
     void Start()
     {
         _rb = GetComponent<Rigidbody>();
@@ -69,64 +74,94 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        if (isGrounded && (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)))
+        if ((Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)))
         {
-            jumpRequest = true; 
+            jumpBufferCounter = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferCounter -= Time.deltaTime;
+        }
+
+        if (jumpBufferCounter > 0f && isGrounded)
+        {
+            jumpRequest = true;
+            jumpBufferCounter = 0f;
+
+            if (transform.localScale.y < originalScaleY)
+            {
+                StopSlideAndReset();
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
         {
-                StartCoroutine(Slide());
+            if (slideCoroutine != null)
+            {
+                StopCoroutine(slideCoroutine);
+            }
+            slideCoroutine = StartCoroutine(Slide());
         }
     }
     void FixedUpdate()
     {
-        float newZ = _rb.position.z + (forwardSpeed * Time.fixedDeltaTime);
+        float currentHalfHeight = transform.localScale.y / 2f;
+        float dynamicGroundY = currentHalfHeight;
+
+        Vector3 rayStart = new Vector3(_rb.position.x, _rb.position.y + 1f, _rb.position.z);
+        RaycastHit hit;
+        Vector3 moveDirection = Vector3.forward;
+
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
+        {
+            dynamicGroundY = hit.point.y + currentHalfHeight;
+            moveDirection = Vector3.ProjectOnPlane(Vector3.forward, hit.normal).normalized;
+        }
+
+        if (isGrounded && jumpRequest)
+        {
+            verticalVelocity = jumpForce;
+            isGrounded = false;
+            jumpRequest = false;
+        }
+
+        float nextY = _rb.position.y;
+
+        if (!isGrounded)
+        {
+            verticalVelocity += gravity * Time.fixedDeltaTime;
+            verticalVelocity = Mathf.Max(verticalVelocity, -50f);
+            nextY += verticalVelocity * Time.fixedDeltaTime;
+
+            if (verticalVelocity <= 0 && nextY <= dynamicGroundY)
+            {
+                nextY = dynamicGroundY;
+                verticalVelocity = 0f;
+                isGrounded = true;
+            }
+        }
+        else
+        {
+            if (_rb.position.y - dynamicGroundY > 0.5f)
+            {
+                isGrounded = false;
+            }
+            else
+            {
+                verticalVelocity = 0f;
+                nextY = dynamicGroundY;
+            }
+        }
+
         float targetX = 0f;
         if (desiredLane == 0) targetX = -laneDistance;
         else if (desiredLane == 1) targetX = 0;
         else if (desiredLane == 2) targetX = laneDistance;
 
         float newX = Mathf.Lerp(_rb.position.x, targetX + visualBump, Time.fixedDeltaTime * sideSpeed);
-        if (isGrounded)
-        {
-            if (jumpRequest)
-            {
-                verticalVelocity = jumpForce;
-                isGrounded = false;
-                jumpRequest = false;
-            }
-            else
-            {
-                verticalVelocity = 0f;
-            }
-        }
-        else
-        {
-            verticalVelocity += gravity * Time.fixedDeltaTime;
-            verticalVelocity = Mathf.Max(verticalVelocity, -50f);
-        }
-        float currentHalfHeight = transform.localScale.y / 2f;
-        float nextY = _rb.position.y + (verticalVelocity * Time.fixedDeltaTime);
-        float dynamicGroundY = currentHalfHeight;
 
-        Vector3 rayStart = new Vector3(_rb.position.x, _rb.position.y + 1f, _rb.position.z);
-        RaycastHit hit;
+        float newZ = _rb.position.z + (moveDirection.z * forwardSpeed * Time.fixedDeltaTime);
 
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
-        {
-            dynamicGroundY = hit.point.y + currentHalfHeight;
-        }
-
-        if (nextY <= dynamicGroundY)
-        {
-            nextY = dynamicGroundY;
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
         Vector3 newPosition = new Vector3(newX, nextY, newZ);
         _rb.MovePosition(newPosition);
     }
@@ -180,5 +215,19 @@ public class PlayerMovement : MonoBehaviour
             return false;
         }
         return true;
+    }
+    void StopSlideAndReset()
+    {
+        if (slideCoroutine != null)
+        {
+            StopCoroutine(slideCoroutine);
+            slideCoroutine = null;
+        }
+
+        if (isGrounded)
+        {
+            _rb.position = new Vector3(_rb.position.x, _rb.position.y + (originalScaleY / 4f), _rb.position.z);
+        }
+        transform.localScale = new Vector3(transform.localScale.x, originalScaleY, transform.localScale.z);
     }
 }

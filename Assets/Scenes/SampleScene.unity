@@ -161,6 +161,7 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  jumpBufferTime: 0.2
 --- !u!65 &48845503
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -731,7 +732,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 666f75d4a8dc30c40983e9d54371cee9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tilePrefab: {fileID: 238681179385469303, guid: e53f7a342c121d240a5ba9d09bf84773, type: 3}
+  tilePrefab:
+  - {fileID: 238681179385469303, guid: e53f7a342c121d240a5ba9d09bf84773, type: 3}
   tileLenght: 30
   numberOfTiles: 5
   playerTransform: {fileID: 48845506}
