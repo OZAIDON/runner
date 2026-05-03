@@ -162,6 +162,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   jumpBufferTime: 0.2
+  collisionScript: {fileID: 48845508}
 --- !u!65 &48845503
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -292,6 +293,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementScript: {fileID: 48845502}
   restartUI: {fileID: 1107412820}
+  stumbleTopMargin: 0.6
+  stumbleSpeedPenalty: 0.5
+  stumbleForgivenessTime: 3
+  speedRestoreTime: 1.5
+  cameraScript: {fileID: 330585548}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -517,7 +523,7 @@ Light:
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
-  m_ColorTemperature: 5000
+  m_ColorTemperature: 2531
   m_UseColorTemperature: 1
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
@@ -713,6 +719,7 @@ GameObject:
   - component: {fileID: 697112571}
   - component: {fileID: 697112570}
   - component: {fileID: 697112572}
+  - component: {fileID: 697112573}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -735,7 +742,7 @@ MonoBehaviour:
   tilePrefab:
   - {fileID: 238681179385469303, guid: e53f7a342c121d240a5ba9d09bf84773, type: 3}
   tileLenght: 30
-  numberOfTiles: 5
+  numberOfTiles: 7
   playerTransform: {fileID: 48845506}
 --- !u!4 &697112571
 Transform:
@@ -768,6 +775,20 @@ MonoBehaviour:
   playerMovement: {fileID: 48845502}
   speedIncreaseRate: 0.1
   maxSpeed: 30
+--- !u!114 &697112573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697112569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10af9efa0f731b84eb544ca9a5e82c92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  curveStrength: 0.01
+  curveDistance: 3
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

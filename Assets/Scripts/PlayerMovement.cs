@@ -22,6 +22,9 @@ public class PlayerMovement : MonoBehaviour
     public float jumpBufferTime = 0.2f;
     private float jumpBufferCounter;
 
+    [Header("Referances")]
+    public PlayerCollision collisionScript;
+
     private Rigidbody _rb;
     private int desiredLane = 1;
     private float originalScaleY;
@@ -52,6 +55,10 @@ public class PlayerMovement : MonoBehaviour
                         StopCoroutine(bumpCoroutine);
                     }
                     bumpCoroutine = StartCoroutine(BumpEffect(1));
+                    if (collisionScript != null)
+                    {
+                        collisionScript.Stumble();
+                    }
                 }
             } 
         }
@@ -70,6 +77,10 @@ public class PlayerMovement : MonoBehaviour
                         StopCoroutine(bumpCoroutine);
                     }
                     bumpCoroutine = StartCoroutine(BumpEffect(-1));
+                    if (collisionScript  != null)
+                    {
+                        collisionScript.Stumble();
+                    }
                 }
             }
         }
@@ -188,7 +199,7 @@ public class PlayerMovement : MonoBehaviour
     }
     IEnumerator BumpEffect(int direction)
     {
-        float bumpDistance = 0.7f;
+        float bumpDistance = 2f;
         float duration = 0.1f;
 
         visualBump = direction * bumpDistance;
@@ -198,23 +209,27 @@ public class PlayerMovement : MonoBehaviour
     }
     bool IsPathClear(int direction)
     {
-        Vector3 rayDirection = (direction == 1) ? transform.right : -transform.right;
+        float targetX = transform.position.x + (direction * laneDistance);
+        Vector3 targetLaneRayStart = new Vector3(targetX, transform.position.y + 5f, transform.position.z);
+        RaycastHit targetHit;
+        float targetSurfaceY = 0f;
 
-        float currentSurfaceY = 0f;
-        RaycastHit downHit;
-        Vector3 downRayStart = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
-
-        if (Physics.Raycast(downRayStart, Vector3.down, out downHit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(targetLaneRayStart, Vector3.down, out targetHit, 15f, groundLayer, QueryTriggerInteraction.Ignore))
         {
-            currentSurfaceY = downHit.point.y;
+            targetSurfaceY = targetHit.point.y;
         }
-        Vector3 sideRayStart = new Vector3(transform.position.x, currentSurfaceY + 0.5f, transform.position.z);
-        RaycastHit sideHit;
-        if (Physics.Raycast(sideRayStart, rayDirection, out sideHit, laneDistance, groundLayer, QueryTriggerInteraction.Ignore))
+        float currentHalfHeight = transform.localScale.y / 2f;
+        float playerFeetY = _rb.position.y - currentHalfHeight;
+
+        if (playerFeetY + 0.1f >= targetSurfaceY)
+        {
+            return true;
+        }
+        else
         {
             return false;
         }
-        return true;
+        
     }
     void StopSlideAndReset()
     {
